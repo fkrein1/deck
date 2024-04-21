@@ -1,0 +1,25 @@
+.swiper-wrapper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(auto, 1fr));
+}
+
+.swiper-pagination {
+  display: flex;
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  gap: 12px;
+  bottom: 40px;
+  z-index: 2;
+}
+
+.paginationBullet {
+  background: #d1d5db;
+  width: 8px;
+  height: 8px;
+  border-radius: 100%;
+}
+
+.paginationBulletActive {
+  background-color: #f9fafb
+}

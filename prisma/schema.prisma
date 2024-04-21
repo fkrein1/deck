@@ -1,0 +1,163 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider     = "mysql"
+    url          = env("DATABASE_URL")
+    relationMode = "prisma"
+}
+
+// Necessary for Next Auth
+model Account {
+    id                       String  @id @default(cuid())
+    userId                   String
+    type                     String
+    provider                 String
+    providerAccountId        String
+    refresh_token            String? @db.Text
+    refresh_token_expires_in Int?
+    access_token             String? @db.Text
+    expires_at               Int?
+    token_type               String?
+    scope                    String?
+    id_token                 String? @db.Text
+    session_state            String?
+    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+    @@index([userId])
+}
+
+model Session {
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+}
+
+model User {
+    id            String         @id @default(cuid())
+    name          String?
+    email         String?        @unique
+    emailVerified DateTime?
+    image         String?
+    stripeId      String?        @unique
+    subscription  Subscription?
+    accounts      Account[]
+    sessions      Session[]
+    presentation  Presentation[]
+}
+
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
+// Application Models
+model Subscription {
+    id        String     @id
+    status    String
+    priceId   String
+    userId    String     @unique
+    recurring Recurring?
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Recurring {
+    month
+    year
+    week
+    day
+}
+
+model Presentation {
+    id         String           @id @default(cuid())
+    createdAt  DateTime         @default(now())
+    prompt     String           @db.Text
+    type       PresentationType
+    title      String           @db.Text
+    subtitle   String           @db.Text
+    public     Boolean
+    userId     String
+    slides     Slide[]
+    logo       String?
+    pipeline   String?
+    management Management[]
+    user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+}
+
+model Management {
+    id             String       @id @default(cuid())
+    url            String
+    presentationId String
+    presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+
+    @@index([presentationId])
+}
+
+enum PresentationType {
+    pitch_deck
+    market_research
+    marketing_plan
+    company_overview
+}
+
+model Slide {
+    id             String        @id @default(cuid())
+    presentationId String
+    title          String        @db.Text
+    subtitle       String        @db.Text
+    summary        String        @db.Text
+    number         Int
+    bulletPoints   BulletPoint[]
+    graph          Graph?
+    presentation   Presentation  @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+
+    @@index([presentationId])
+}
+
+model BulletPoint {
+    id      String @id @default(cuid())
+    value   String
+    slideId String
+    slide   Slide  @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+    @@index([slideId])
+}
+
+model Graph {
+    id         String      @id @default(cuid())
+    title      String      @db.Text
+    source     String      @db.Text
+    valueIn    String      @db.Text
+    type       GraphType
+    dataPoints DataPoint[]
+    slideId    String      @unique
+    slide      Slide       @relation(fields: [slideId], references: [id], onDelete: Cascade)
+}
+
+enum GraphType {
+    bar
+    table
+    pie
+    line
+}
+
+model DataPoint {
+    id      String @id @default(cuid())
+    name    String @db.Text
+    value   Float
+    graphId String
+    graph   Graph  @relation(fields: [graphId], references: [id], onDelete: Cascade)
+
+    @@index([graphId])
+}
